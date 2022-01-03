@@ -9,7 +9,7 @@ This is an mmap-based ParallelZipFile implementation since Python's ZipFile is c
 
 ## Example
 
-Example for reading and checking file integrity of files in a zip archive in parallel using a ThreadPool.
+Example for reading and checking file integrity of files in a zip archive in parallel using a ThreadPool. Just copy `parallelzipfile.py` into your project directory and you are good to go.
 
 ```python3
 import zlib
