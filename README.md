@@ -1,15 +1,15 @@
-This is an mmap-based ParallelZipFile implementation since Python's ZipFile is currently (2022-01-01) not thread safe.
+This is an mmap-based ParallelZipFile implementation since Python's ZipFile is currently (2022-01-01) [not thread safe](https://bugs.python.org/issue42369).
 
 ## Gotchas:
 
-* Only reading is supported. Writing zip files is not supported.
-* Only a very limited subset of the zip file specification is implemented ("good enough" for my use cases).
+* Only reading is supported. Writing zip archives is not supported.
+* Only a very limited subset of the zip specification is implemented ("good enough" for my use cases).
 * By default, file integrity (CRC32) is not checked.
 * There probably are bugs. Use at your own risk.
 
 ## Example
 
-Example for reading and checking file integrity of files in a zip file in parallel using a ThreadPool.
+Example for reading and checking file integrity of files in a zip archive in parallel using a ThreadPool.
 
 ```python3
 import zlib
@@ -37,7 +37,8 @@ with ZipFile("example.zip") as z:
 
 ![Benchmark](https://raw.githubusercontent.com/99991/ParallelZipFile/main/benchmark.png)
 
-This plot shows how long it takes to process a 10 MB zip file containing files of varying size with 1, 2, 4 or 8 threads using ZipFile or ParallelZipFile.
+This plot shows how long it takes to process a 10 MB zip archive containing files of increasing size with 1, 2, 4 or 8 threads using ZipFile or ParallelZipFile.
+The zip archive contains fewer files as the file size of the contained individual files grows to keep the total size of the zip archive approximately the same (header sizes not considered).
 
 * For very small files, single threaded performance is higher than multi-threaded performance, but multi-threaded performance is higher for medium to large files.
 * ParallelZipFile is faster than ZipFile with almost any number of threads. The difference decreases with larger files.
