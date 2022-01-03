@@ -4,7 +4,34 @@ This is an mmap-based ParallelZipFile implementation since Python's ZipFile is c
 
 * Only reading is supported. Writing zip files is not supported.
 * Only a very limited subset of the zip file specification is implemented ("good enough" for my use cases).
+* By default, file integrity (CRC32) is not checked.
 * There probably are bugs. Use at your own risk.
+
+## Example
+
+Example for reading and checking file integrity of files in a zip file in parallel using a ThreadPool.
+
+```python3
+import zlib
+from multiprocessing.pool import ThreadPool
+
+from parallelzipfile import ParallelZipFile as ZipFile
+
+
+def do_something_with_file(info):
+    """Checking file integrity."""
+
+    data = z.read(info.filename)
+
+    computed_crc = zlib.crc32(data)
+
+    assert computed_crc == info.CRC
+
+
+with ZipFile("example.zip") as z:
+    with ThreadPool() as pool:
+        pool.map(do_something_with_file, z.infolist())
+```
 
 ## Benchmark
 

@@ -37,6 +37,10 @@ class ZipInfo:
         self.compress_size = compress_size
         self.file_size = file_size
 
+    def is_dir(self) -> bool:
+        """Directories in a zip file should end with '/'."""
+        return self.filename.endswith("/")
+
 
 def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
     # Read end-of-central-directory (EOCD) from mmaped zipfile.
