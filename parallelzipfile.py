@@ -68,8 +68,8 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
     assert signature == b"PK\5\6"
 
     # If format is zip64, there should also be a zip64 EOCD header
-    if directory_offset == 0xFFFFFFFF:
-        offset64 = end.rfind(b"\x50\x4b\x06\x06")
+    if directory_offset == 0xFFFFFFFF or num_files == 0xFFFF:
+        offset64 = end.rfind(b"PK\6\6")
 
         assert offset64 >= 0
         eocd = struct.unpack("<4sQHHII4Q", end[offset64 : offset64 + 56])
@@ -85,17 +85,15 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
             directory_size,
             directory_offset,
         ) = eocd
-        assert signature == b"PK\5\6"
+        assert signature == b"PK\6\6"
 
     # Read central directory headers which hold information about stored files
     # as long as the signature matches
     files: Dict[str, ZipInfo] = {}
     mmap_offset = directory_offset
-    while True:
+    for _ in range(num_files):
         header = m[mmap_offset : mmap_offset + 46]
         mmap_offset += 46
-
-        if header[:4] != b"PK\1\2": break
 
         (
             signature,
