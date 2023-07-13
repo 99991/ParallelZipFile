@@ -52,9 +52,9 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
     # Scan backwards until EOCD signature is found
     # TODO this could fail if a comment contains the EOCD signature.
     # Should employ sanity check to verify that an actual EOCD was found.
-    offset32 = end.rfind(b"\x50\x4b\x05\x06")
+    offset32 = end.rfind(b"PK\5\6")
     assert offset32 >= 0
-    eocd = struct.unpack("<IHHHHIIH", end[offset32 : offset32 + 22])
+    eocd = struct.unpack("<4sHHHHIIH", end[offset32 : offset32 + 22])
     (
         signature,
         num_disks,
@@ -65,13 +65,14 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
         directory_offset,
         comment_length,
     ) = eocd
-    assert signature == 0x06054B50
+    assert signature == b"PK\5\6"
 
     # If format is zip64, there should also be a zip64 EOCD header
     if directory_offset == 0xFFFFFFFF:
         offset64 = end.rfind(b"\x50\x4b\x06\x06")
+
         assert offset64 >= 0
-        eocd = struct.unpack("<IQHHII4Q", end[offset64 : offset64 + 56])
+        eocd = struct.unpack("<4sQHHII4Q", end[offset64 : offset64 + 56])
         (
             signature,
             eocd_size,
@@ -84,14 +85,17 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
             directory_size,
             directory_offset,
         ) = eocd
-        assert signature == 0x06064B50
+        assert signature == b"PK\5\6"
 
     # Read central directory headers which hold information about stored files
+    # as long as the signature matches
     files: Dict[str, ZipInfo] = {}
     mmap_offset = directory_offset
-    for _ in range(num_files):
+    while True:
         header = m[mmap_offset : mmap_offset + 46]
         mmap_offset += 46
+
+        if header[:4] != b"PK\1\2": break
 
         (
             signature,
@@ -111,9 +115,9 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
             attributes0,
             attributes1,
             offset,
-        ) = struct.unpack("<I6H3I5HII", header)
+        ) = struct.unpack("<4s6H3I5HII", header)
 
-        assert signature == 0x02014B50
+        assert signature == b"PK\1\2"
 
         filename_bytes = m[mmap_offset : mmap_offset + filename_length]
         mmap_offset += filename_length
