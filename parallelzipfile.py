@@ -53,8 +53,11 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
     # TODO this could fail if a comment contains the EOCD signature.
     # Should employ sanity check to verify that an actual EOCD was found.
     offset32 = end.rfind(b"PK\5\6")
+
     assert offset32 >= 0
+
     eocd = struct.unpack("<4sHHHHIIH", end[offset32 : offset32 + 22])
+
     (
         signature,
         num_disks,
@@ -65,16 +68,19 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
         directory_offset,
         comment_length,
     ) = eocd
+
     assert signature == b"PK\5\6"
 
-    # If format is zip64, there should also be a zip64 EOCD header
-    if directory_offset == 0xFFFFFFFF or num_files == 0xFFFF:
-        offset64 = end.rfind(b"PK\6\6")
+    # Read zip64 end of central directory if locator exists
+    locator_offset = end.rfind(b"PK\6\7")
+    if locator_offset != -1:
+        offset, = struct.unpack("<Q", end[locator_offset + 8: locator_offset + 16])
+        eocd64_data = m[offset: offset + 56]
 
-        assert offset64 >= 0
-        eocd = struct.unpack("<4sQHHII4Q", end[offset64 : offset64 + 56])
+        eocd64 = struct.unpack("<4sQHHII4Q", eocd64_data)
+
         (
-            signature,
+            eocd64_signature,
             eocd_size,
             version,
             min_version,
@@ -84,8 +90,9 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
             num_files2,
             directory_size,
             directory_offset,
-        ) = eocd
-        assert signature == b"PK\6\6"
+        ) = eocd64
+
+        assert eocd64_signature == b"PK\6\6"
 
     # Read central directory headers which hold information about stored files
     # as long as the signature matches
