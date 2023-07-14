@@ -282,7 +282,10 @@ class ParallelZipFile:
             assert len(compressed) >= 4 + size
             filt = lzma._decode_filter_properties(lzma.FILTER_LZMA1, compressed[4:4 + size])
             decompress = lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=[filt])
-            return decompress.decompress(compressed[4 + size:])
+            decompressed = decompress.decompress(compressed[4 + size:])
+            # Decompresses too much data sometimes
+            decompressed = decompressed[:uncompressed_size]
+            return decompressed
         else:
             error_message = f"Compression method {compression} not implemented"
             raise NotImplementedError(error_message)
