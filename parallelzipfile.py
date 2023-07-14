@@ -8,6 +8,7 @@ http://web.archive.org/web/20210310084602/https://users.cs.jmu.edu/buchhofp/fore
 http://web.archive.org/web/20210225050454/https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
 """
 
+import lzma
 import mmap
 import struct
 import zlib
@@ -275,6 +276,13 @@ class ParallelZipFile:
             # DEFLATE compression
             decompress = zlib.decompressobj(-zlib.MAX_WBITS)
             return decompress.decompress(compressed)
+        elif compression == 14:
+            # LZMA compression
+            _, size = struct.unpack("<HH", compressed[:4])
+            assert len(compressed) >= 4 + size
+            filt = lzma._decode_filter_properties(lzma.FILTER_LZMA1, compressed[4:4 + size])
+            decompress = lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=[filt])
+            return decompress.decompress(compressed[4 + size:])
         else:
             error_message = f"Compression method {compression} not implemented"
             raise NotImplementedError(error_message)
