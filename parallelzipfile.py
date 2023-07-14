@@ -128,7 +128,14 @@ def _read_eocd_mmap(m: mmap.mmap) -> Dict[str, ZipInfo]:
         mmap_offset += filename_length
         extra = m[mmap_offset : mmap_offset + extra_length]
         mmap_offset += extra_length + comment_length
-        filename = filename_bytes.rstrip(b"\0").decode("utf-8")
+        for encoding in ["utf-8", "windows-1252", "CP437"]:
+            try:
+                filename = filename_bytes.rstrip(b"\0").decode(encoding)
+                break
+            except UnicodeDecodeError:
+                pass
+        else:
+            raise ValueError(f"Could not decode filename " + str(filename_bytes))
 
         # TODO Figure out what those bytes mean.
         # TODO Parse extra header correctly
