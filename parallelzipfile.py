@@ -8,6 +8,7 @@ http://web.archive.org/web/20210310084602/https://users.cs.jmu.edu/buchhofp/fore
 http://web.archive.org/web/20210225050454/https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
 """
 
+import bz2
 import lzma
 import mmap
 import struct
@@ -276,6 +277,8 @@ class ParallelZipFile:
             # DEFLATE compression
             decompress = zlib.decompressobj(-zlib.MAX_WBITS)
             return decompress.decompress(compressed)
+        elif compression == 12:
+            return bz2.decompress(compressed)
         elif compression == 14:
             # LZMA compression
             _, size = struct.unpack("<HH", compressed[:4])
